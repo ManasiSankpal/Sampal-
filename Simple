@@ -1,98 +1,7 @@
 package com.gli.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
-import lombok.*;
-
-import java.util.List;
-
-@Entity
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class Broker {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @NotBlank(message = "Broker name is required")
-    private String name;
-
-    @Email(message = "Email should be valid")
-    @NotBlank(message = "Email is required")
-    private String email;
-
-    @Pattern(regexp = "^[0-9]{10}$", message = "Contact number should be 10 digits")
-    private String contactNumber;
-
-    @OneToMany(mappedBy = "broker", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Quote> quotes;
-}
-
-package com.gli.model;
-
-import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import lombok.*;
-
-@Entity
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class Quote {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @NotBlank(message = "Customer name is required")
-    private String customerName;
-
-    @NotBlank(message = "Business name is required")
-    private String businessName;
-
-    @NotBlank(message = "Business address is required")
-    private String businessAddress;
-
-    @NotBlank(message = "Business type is required")
-    private String businessType;
-
-    @Positive(message = "Annual revenue must be positive")
-    private double annualRevenue;
-
-    @Min(value = 1, message = "Number of employees must be at least 1")
-    private int numberOfEmployees;
-
-    private String locationRisk;
-
-    @Min(value = 0, message = "Claim history cannot be negative")
-    private int claimHistory;
-
-    @Positive(message = "Deductible must be positive")
-    private double deductible;
-
-    @Positive(message = "Coverage amount must be positive")
-    private double coverageAmount;
-
-    private double premium;
-
-    private String status; // Draft, Submitted, Bound
-
-    @ManyToOne
-    @JoinColumn(name = "broker_id")
-    private Broker broker;
-
-    @OneToOne(mappedBy = "quote", cascade = CascadeType.ALL)
-    private Policy policy;
-}
-
-package com.gli.model;
-
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -108,18 +17,25 @@ public class Policy {
     private Long id;
 
     @NotBlank(message = "Policy number is required")
+    @Column(unique = true)
     private String policyNumber;
 
+    @FutureOrPresent(message = "Effective date cannot be in the past")
     private LocalDate effectiveDate;
 
+    @Future(message = "Expiration date must be in the future")
     private LocalDate expirationDate;
 
+    @NotBlank(message = "Coverage details are required")
     private String coverageDetails;
 
+    @Positive(message = "Total premium must be positive")
     private double totalPremium;
 
+    @NotBlank(message = "Policy status is required")
+    private String status;  // Issued, Cancelled, Expired
+
     @OneToOne
-    @JoinColumn(name = "quote_id")
+    @JoinColumn(name = "quote_id", nullable = false)
     private Quote quote;
 }
-
