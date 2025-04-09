@@ -22,3 +22,69 @@ public class Broker {
     @OneToMany(mappedBy = "broker", cascade = CascadeType.ALL)
     private List<Quote> quotes;
 }
+
+
+
+package com.example.insurance.model;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Quote {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String customerName;
+
+    private String businessName;
+    private String businessAddress;
+    private String businessType;
+    private double annualRevenue;
+    private int numberOfEmployees;
+    private String locationRisk;
+
+    private double coverageAmount;
+    private double premium;
+    private String status; // e.g., Draft, Submitted, Bound
+
+    @ManyToOne
+    @JoinColumn(name = "broker_id")
+    private Broker broker;
+
+    @OneToOne(mappedBy = "quote", cascade = CascadeType.ALL)
+    private Policy policy;
+}
+
+
+
+package com.example.insurance.model;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDate;
+
+@Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Policy {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String policyNumber;
+    private LocalDate startDate;
+    private LocalDate endDate;
+
+    @OneToOne
+    @JoinColumn(name = "quote_id")
+    private Quote quote;
+}
