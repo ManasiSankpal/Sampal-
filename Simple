@@ -1,55 +1,34 @@
-package com.gli.dto;
+package com.gli.service;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
-import lombok.Data;
+import com.gli.dto.BrokerLoginRequest;
+import com.gli.dto.BrokerRegisterRequest;
+import com.gli.model.Broker;
+import com.gli.repository.BrokerRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
-@Data
-public class BrokerRegisterRequest {
+@Service
+public class BrokerService {
 
-    @NotBlank(message = "Broker name is required")
-    private String name;
+    @Autowired
+    private BrokerRepository brokerRepository;
 
-    @Email(message = "Email should be valid")
-    @NotBlank(message = "Email is required")
-    private String email;
+    public Broker registerBroker(BrokerRegisterRequest request) {
+        if (!request.isPasswordMatching()) {
+            throw new IllegalArgumentException("Password and Confirm Password do not match");
+        }
 
-    @Pattern(regexp = "^[0-9]{10}$", message = "Contact number should be 10 digits")
-    private String contactNumber;
-
-    @NotBlank(message = "Password is required")
-    private String password;
-
-    @NotBlank(message = "Confirm password is required")
-    private String confirmPassword;
-
-    public boolean isPasswordMatching() {
-        return this.password != null && this.password.equals(this.confirmPassword);
-    }
-}
-
-
-public Broker registerBroker(BrokerRegisterRequest request) {
-    if (!request.isPasswordMatching()) {
-        throw new IllegalArgumentException("Password and Confirm Password do not match");
+        Broker broker = new Broker();
+        broker.setName(request.getName());
+        broker.setEmail(request.getEmail());
+        broker.setContactNumber(request.getContactNumber());
+        broker.setPassword(request.getPassword()); // You can add password hashing here
+        return brokerRepository.save(broker);
     }
 
-    Broker broker = new Broker();
-    broker.setName(request.getName());
-    broker.setEmail(request.getEmail());
-    broker.setContactNumber(request.getContactNumber());
-    broker.setPassword(request.getPassword());
-    return brokerRepository.save(broker);
-}
-
-
-@PostMapping("/register")
-public ResponseEntity<?> register(@RequestBody @Valid BrokerRegisterRequest request) {
-    try {
-        Broker broker = brokerService.registerBroker(request);
-        return ResponseEntity.ok(broker);
-    } catch (IllegalArgumentException e) {
-        return ResponseEntity.badRequest().body(e.getMessage());
+    public Broker loginBroker(BrokerLoginRequest request) {
+        return brokerRepository.findByEmail(request.getEmail())
+                .filter(b -> b.getPassword().equals(request.getPassword()))
+                .orElse(null);
     }
 }
