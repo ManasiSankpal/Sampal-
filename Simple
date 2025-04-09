@@ -1,41 +1,158 @@
 package com.gli.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.*;
 
-import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Policy {
+public class Broker {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Policy number is required")
-    @Column(unique = true)
-    private String policyNumber;
+    @NotBlank(message = "Broker name is required")
+    private String name;
 
-    @FutureOrPresent(message = "Effective date cannot be in the past")
-    private LocalDate effectiveDate;
+    @Email(message = "Email should be valid")
+    @NotBlank(message = "Email is required")
+    private String email;
 
-    @Future(message = "Expiration date must be in the future")
-    private LocalDate expirationDate;
+    @Pattern(regexp = "^[0-9]{10}$", message = "Contact number should be 10 digits")
+    private String contactNumber;
 
-    @NotBlank(message = "Coverage details are required")
-    private String coverageDetails;
+    @NotBlank(message = "Password is required")
+    private String password;
 
-    @Positive(message = "Total premium must be positive")
-    private double totalPremium;
+    @OneToMany(mappedBy = "broker", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Quote> quotes;
+}
 
-    @NotBlank(message = "Policy status is required")
-    private String status;  // Issued, Cancelled, Expired
 
-    @OneToOne
-    @JoinColumn(name = "quote_id", nullable = false)
-    private Quote quote;
+package com.gli.repository;
+
+import com.gli.model.Broker;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+public interface BrokerRepository extends JpaRepository<Broker, Long> {
+    Optional<Broker> findByEmail(String email);
+}
+
+
+package com.gli.dto;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import lombok.Data;
+
+@Data
+public class BrokerRegisterRequest {
+
+    @NotBlank(message = "Broker name is required")
+    private String name;
+
+    @Email(message = "Email should be valid")
+    @NotBlank(message = "Email is required")
+    private String email;
+
+    @Pattern(regexp = "^[0-9]{10}$", message = "Contact number should be 10 digits")
+    private String contactNumber;
+
+    @NotBlank(message = "Password is required")
+    private String password;
+}
+
+package com.gli.dto;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
+
+@Data
+public class BrokerLoginRequest {
+
+    @Email(message = "Email should be valid")
+    @NotBlank(message = "Email is required")
+    private String email;
+
+    @NotBlank(message = "Password is required")
+    private String password;
+}
+
+
+package com.gli.service;
+
+import com.gli.dto.BrokerLoginRequest;
+import com.gli.dto.BrokerRegisterRequest;
+import com.gli.model.Broker;
+import com.gli.repository.BrokerRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class BrokerService {
+
+    @Autowired
+    private BrokerRepository brokerRepository;
+
+    public Broker registerBroker(BrokerRegisterRequest request) {
+        Broker broker = new Broker();
+        broker.setName(request.getName());
+        broker.setEmail(request.getEmail());
+        broker.setContactNumber(request.getContactNumber());
+        broker.setPassword(request.getPassword()); // Hashing can be added later
+        return brokerRepository.save(broker);
+    }
+
+    public Broker loginBroker(BrokerLoginRequest request) {
+        return brokerRepository.findByEmail(request.getEmail())
+                .filter(b -> b.getPassword().equals(request.getPassword()))
+                .orElse(null);
+    }
+}
+
+
+package com.gli.controller;
+
+import com.gli.dto.BrokerLoginRequest;
+import com.gli.dto.BrokerRegisterRequest;
+import com.gli.model.Broker;
+import com.gli.service.BrokerService;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/brokers")
+public class BrokerController {
+
+    @Autowired
+    private BrokerService brokerService;
+
+    @PostMapping("/register")
+    public ResponseEntity<Broker> register(@RequestBody @Valid BrokerRegisterRequest request) {
+        Broker broker = brokerService.registerBroker(request);
+        return ResponseEntity.ok(broker);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody @Valid BrokerLoginRequest request) {
+        Broker broker = brokerService.loginBroker(request);
+        if (broker != null) {
+            return ResponseEntity.ok("Login successful");
+        } else {
+            return ResponseEntity.status(401).body("Invalid email or password");
+        }
+    }
 }
