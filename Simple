@@ -1,61 +1,133 @@
+package com.gli.dto;
+
+import lombok.Data;
+import java.time.LocalDate;
+
+@Data
+public class PolicyDTO {
+    private String policyNumber;
+    private LocalDate effectiveDate;
+    private LocalDate expirationDate;
+    private String coverageDetails;
+    private double totalPremium;
+    private String status;
+    private Long quoteId;
+}
+
+
+
+package com.gli.repository;
+
+import com.gli.model.Policy;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface PolicyRepository extends JpaRepository<Policy, Long> {
+}
+
+
+package com.gli.service;
+
+import com.gli.model.Policy;
+import com.gli.model.Quote;
+import com.gli.repository.PolicyRepository;
+import com.gli.repository.QuoteRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+@Service
+public class PolicyService {
+
+    @Autowired
+    private PolicyRepository policyRepository;
+
+    @Autowired
+    private QuoteRepository quoteRepository;
+
+    public Policy createPolicyFromQuote(Long quoteId) {
+        Quote quote = quoteRepository.findById(quoteId)
+                .orElseThrow(() -> new IllegalArgumentException("Quote not found"));
+
+        Policy policy = new Policy();
+        policy.setPolicyNumber("POL-" + UUID.randomUUID().toString().substring(0, 8));
+        policy.setEffectiveDate(LocalDate.now());
+        policy.setExpirationDate(LocalDate.now().plusYears(1));
+        policy.setCoverageDetails("Coverage: " + quote.getCoverageAmount());
+        policy.setTotalPremium(quote.getPremium());
+        policy.setStatus("Issued");
+        policy.setQuote(quote);
+
+        return policyRepository.save(policy);
+    }
+
+    public List<Policy> getAllPolicies() {
+        return policyRepository.findAll();
+    }
+
+    public Optional<Policy> getPolicyById(Long id) {
+        return policyRepository.findById(id);
+    }
+
+    public Policy updatePolicy(Long id, Policy updatedPolicy) {
+        Policy existing = policyRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Policy not found"));
+        existing.setCoverageDetails(updatedPolicy.getCoverageDetails());
+        existing.setEffectiveDate(updatedPolicy.getEffectiveDate());
+        existing.setExpirationDate(updatedPolicy.getExpirationDate());
+        existing.setTotalPremium(updatedPolicy.getTotalPremium());
+        existing.setStatus(updatedPolicy.getStatus());
+        return policyRepository.save(existing);
+    }
+
+    public void deletePolicy(Long id) {
+        policyRepository.deleteById(id);
+    }
+}
+
 package com.gli.controller;
 
-import com.gli.model.Quote;
-import com.gli.service.QuoteService;
-import com.gli.service.PremiumCalculationService;
+import com.gli.model.Policy;
+import com.gli.service.PolicyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/quotes")
-@CrossOrigin(origins = "*")
-public class QuoteController {
+@RequestMapping("/api/policies")
+public class PolicyController {
 
     @Autowired
-    private QuoteService quoteService;
+    private PolicyService policyService;
 
-    @Autowired
-    private PremiumCalculationService premiumCalculationService;
-
-    // Create Quote
-    @PostMapping("/create")
-    public Quote createQuote(@RequestBody Quote quote) {
-        double premium = premiumCalculationService.calculatePremium(quote);
-        quote.setPremium(premium);
-        return quoteService.saveQuote(quote);
+    @PostMapping("/generate/{quoteId}")
+    public Policy createFromQuote(@PathVariable Long quoteId) {
+        return policyService.createPolicyFromQuote(quoteId);
     }
 
-    // Update Quote
-    @PutMapping("/update/{id}")
-    public Quote updateQuote(@PathVariable Long id, @RequestBody Quote updatedQuote) {
-        Quote existingQuote = quoteService.getQuoteById(id);
-        if (existingQuote == null) {
-            throw new RuntimeException("Quote not found with ID: " + id);
-        }
-        updatedQuote.setId(id);
-        double premium = premiumCalculationService.calculatePremium(updatedQuote);
-        updatedQuote.setPremium(premium);
-        return quoteService.saveQuote(updatedQuote);
-    }
-
-    // Get All Quotes
     @GetMapping
-    public List<Quote> getAllQuotes() {
-        return quoteService.getAllQuotes();
+    public List<Policy> getAll() {
+        return policyService.getAllPolicies();
     }
 
-    // Get Quote by ID
     @GetMapping("/{id}")
-    public Quote getQuoteById(@PathVariable Long id) {
-        return quoteService.getQuoteById(id);
+    public Policy getById(@PathVariable Long id) {
+        return policyService.getPolicyById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Policy not found"));
     }
 
-    // Delete Quote
-    @DeleteMapping("/delete/{id}")
-    public String deleteQuote(@PathVariable Long id) {
-        quoteService.deleteQuote(id);
-        return "Quote with ID " + id + " deleted successfully.";
+    @PutMapping("/{id}")
+    public Policy update(@PathVariable Long id, @RequestBody Policy policy) {
+        return policyService.updatePolicy(id, policy);
+    }
+
+    @DeleteMapping("/{id}")
+    public void delete(@PathVariable Long id) {
+        policyService.deletePolicy(id);
     }
 }
+
