@@ -1,68 +1,37 @@
-package com.gli.controller;
+package com.gli.service;
 
 import com.gli.model.Quote;
-import com.gli.service.PremiumCalculationService;
-import com.gli.service.QuoteService;
+import com.gli.repository.QuoteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.stereotype.Service;
 
-@RestController
-@RequestMapping("/api/quotes")
-@CrossOrigin
-public class QuoteController {
+import java.util.List;
+import java.util.Optional;
 
-    @Autowired
-    private QuoteService quoteService;
+@Service
+public class QuoteService {
 
     @Autowired
-    private PremiumCalculationService premiumCalculationService;
+    private QuoteRepository quoteRepository;
 
-    @PostMapping("/create")
-    public Quote createQuote(@RequestBody Quote quote) {
-        double calculatedPremium = premiumCalculationService.calculatePremium(quote);
-        quote.setPremium(calculatedPremium);
-        return quoteService.saveQuote(quote);
+    // Create or Update Quote
+    public Quote saveQuote(Quote quote) {
+        return quoteRepository.save(quote);
     }
 
-    @GetMapping("/{id}")
-    public Quote getQuoteById(@PathVariable Long id) {
-        return quoteService.getQuoteById(id);
+    // Get All Quotes
+    public List<Quote> getAllQuotes() {
+        return quoteRepository.findAll();
     }
 
-    @GetMapping
-    public Iterable<Quote> getAllQuotes() {
-        return quoteService.getAllQuotes();
+    // Get Quote by ID
+    public Quote getQuoteById(Long id) {
+        Optional<Quote> optionalQuote = quoteRepository.findById(id);
+        return optionalQuote.orElse(null);
     }
 
-    @PutMapping("/{id}")
-    public Quote updateQuote(@PathVariable Long id, @RequestBody Quote quoteDetails) {
-        Quote existingQuote = quoteService.getQuoteById(id);
-        if (existingQuote == null) {
-            throw new RuntimeException("Quote not found with id: " + id);
-        }
-
-        // Update fields from request
-        existingQuote.setBusinessType(quoteDetails.getBusinessType());
-        existingQuote.setAnnualRevenue(quoteDetails.getAnnualRevenue());
-        existingQuote.setClaimHistory(quoteDetails.getClaimHistory());
-        existingQuote.setCoverageAmount(quoteDetails.getCoverageAmount());
-        existingQuote.setDeductible(quoteDetails.getDeductible());
-        existingQuote.setNumberOfEmployees(quoteDetails.getNumberOfEmployees());
-        existingQuote.setLocationRisk(quoteDetails.getLocationRisk());
-        existingQuote.setBodilyInjuryCoverage(quoteDetails.getBodilyInjuryCoverage());
-        existingQuote.setPropertyDamageCoverage(quoteDetails.getPropertyDamageCoverage());
-        existingQuote.setPersonalAdvertisingInjuryCoverage(quoteDetails.getPersonalAdvertisingInjuryCoverage());
-
-        // Recalculate premium
-        double newPremium = premiumCalculationService.calculatePremium(existingQuote);
-        existingQuote.setPremium(newPremium);
-
-        return quoteService.saveQuote(existingQuote);
-    }
-
-    @DeleteMapping("/{id}")
-    public String deleteQuote(@PathVariable Long id) {
-        quoteService.deleteQuote(id);
-        return "Quote deleted successfully";
+    // Delete Quote by ID
+    public void deleteQuote(Long id) {
+        quoteRepository.deleteById(id);
     }
 }
