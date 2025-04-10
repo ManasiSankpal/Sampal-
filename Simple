@@ -1,47 +1,65 @@
-package com.gli.exception;
+package com.gli.model;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ControllerAdvice;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
+import lombok.*;
 
-import java.util.HashMap;
-import java.util.Map;
+@Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Quote {
 
-// Global exception handler
-@ControllerAdvice
-public class GlobalExceptionHandler {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    // Custom Exception Class
-    public static class QuoteNotFoundException extends RuntimeException {
-        public QuoteNotFoundException(String message) {
-            super(message);
-        }
-    }
+    @NotBlank(message = "Customer name is required")
+    private String customerName;
 
-    // Handle QuoteNotFoundException
-    @ExceptionHandler(QuoteNotFoundException.class)
-    public ResponseEntity<Map<String, String>> handleQuoteNotFoundException(QuoteNotFoundException ex) {
-        Map<String, String> error = new HashMap<>();
-        error.put("error", ex.getMessage());
-        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
-    }
+    @NotBlank(message = "Business name is required")
+    private String businessName;
 
-    // Handle validation errors
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationErrors(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getFieldErrors().forEach(error ->
-                errors.put(error.getField(), error.getDefaultMessage()));
-        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
-    }
+    @NotBlank(message = "Business address is required")
+    private String businessAddress;
 
-    // Generic fallback exception handler
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleGlobalException(Exception ex) {
-        Map<String, String> error = new HashMap<>();
-        error.put("error", "Internal server error: " + ex.getMessage());
-        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+    @NotBlank(message = "Business type is required")
+    private String businessType;
+
+    @Positive(message = "Annual revenue must be positive")
+    private double annualRevenue;
+
+    @Min(value = 1, message = "Number of employees must be at least 1")
+    private int numberOfEmployees;
+
+    private String locationRisk;
+
+    @Min(value = 0, message = "Claim history cannot be negative")
+    private int claimHistory;
+
+    @Positive(message = "Deductible must be positive")
+    private double deductible;
+
+    @Positive(message = "Coverage amount must be positive")
+    private double coverageAmount;
+
+    @PositiveOrZero(message = "BI Coverage must be zero or positive")
+    private Double bodilyInjuryCoverage = 0.0;
+
+    @PositiveOrZero(message = "PD Coverage must be zero or positive")
+    private Double propertyDamageCoverage = 0.0;
+
+    @PositiveOrZero(message = "PAI Coverage must be zero or positive")
+    private Double personalAdvertisingInjuryCoverage = 0.0;
+
+    private double premium;
+
+    private String status; // Draft, Submitted, Bound
+
+    @ManyToOne
+    @JoinColumn(name = "broker_id")
+    private Broker broker;
+
+    @OneToOne(mappedBy = "quote", cascade = CascadeType.ALL)
+    private Policy policy;
 }
