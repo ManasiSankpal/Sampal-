@@ -1,37 +1,61 @@
-package com.gli.service;
+package com.gli.controller;
 
 import com.gli.model.Quote;
-import com.gli.repository.QuoteRepository;
+import com.gli.service.QuoteService;
+import com.gli.service.PremiumCalculationService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
-@Service
-public class QuoteService {
+@RestController
+@RequestMapping("/api/quotes")
+@CrossOrigin(origins = "*")
+public class QuoteController {
 
     @Autowired
-    private QuoteRepository quoteRepository;
+    private QuoteService quoteService;
 
-    // Create or Update Quote
-    public Quote saveQuote(Quote quote) {
-        return quoteRepository.save(quote);
+    @Autowired
+    private PremiumCalculationService premiumCalculationService;
+
+    // Create Quote
+    @PostMapping("/create")
+    public Quote createQuote(@RequestBody Quote quote) {
+        double premium = premiumCalculationService.calculatePremium(quote);
+        quote.setPremium(premium);
+        return quoteService.saveQuote(quote);
+    }
+
+    // Update Quote
+    @PutMapping("/update/{id}")
+    public Quote updateQuote(@PathVariable Long id, @RequestBody Quote updatedQuote) {
+        Quote existingQuote = quoteService.getQuoteById(id);
+        if (existingQuote == null) {
+            throw new RuntimeException("Quote not found with ID: " + id);
+        }
+        updatedQuote.setId(id);
+        double premium = premiumCalculationService.calculatePremium(updatedQuote);
+        updatedQuote.setPremium(premium);
+        return quoteService.saveQuote(updatedQuote);
     }
 
     // Get All Quotes
+    @GetMapping
     public List<Quote> getAllQuotes() {
-        return quoteRepository.findAll();
+        return quoteService.getAllQuotes();
     }
 
     // Get Quote by ID
-    public Quote getQuoteById(Long id) {
-        Optional<Quote> optionalQuote = quoteRepository.findById(id);
-        return optionalQuote.orElse(null);
+    @GetMapping("/{id}")
+    public Quote getQuoteById(@PathVariable Long id) {
+        return quoteService.getQuoteById(id);
     }
 
-    // Delete Quote by ID
-    public void deleteQuote(Long id) {
-        quoteRepository.deleteById(id);
+    // Delete Quote
+    @DeleteMapping("/delete/{id}")
+    public String deleteQuote(@PathVariable Long id) {
+        quoteService.deleteQuote(id);
+        return "Quote with ID " + id + " deleted successfully.";
     }
 }
