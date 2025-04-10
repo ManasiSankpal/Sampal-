@@ -1,44 +1,90 @@
-package com.gli.controller;
+package com.gli.service;
 
 import com.gli.dto.QuoteDTO;
-import com.gli.service.QuoteService;
+import com.gli.exception.QuoteNotFoundException;
+import com.gli.model.Quote;
+import com.gli.repository.QuoteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import jakarta.validation.Valid;
-import java.util.List;
+import org.springframework.stereotype.Service;
 
-@RestController
-@RequestMapping("/api/quotes")
-@CrossOrigin(origins = "*")
-public class QuoteController {
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class QuoteService {
 
     @Autowired
-    private QuoteService quoteService;
+    private QuoteRepository quoteRepository;
 
-    @PostMapping
-    public ResponseEntity<QuoteDTO> createQuote(@Valid @RequestBody QuoteDTO quoteDTO) {
-        return ResponseEntity.ok(quoteService.createQuote(quoteDTO));
+    public QuoteDTO createQuote(QuoteDTO dto) {
+        Quote quote = dtoToEntity(dto);
+        quote.setStatus("Draft");
+        return entityToDto(quoteRepository.save(quote));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<QuoteDTO> getQuote(@PathVariable Long id) {
-        return ResponseEntity.ok(quoteService.getQuoteById(id));
+    public QuoteDTO getQuoteById(Long id) {
+        Quote quote = quoteRepository.findById(id)
+                .orElseThrow(() -> new QuoteNotFoundException("Quote not found with id: " + id));
+        return entityToDto(quote);
     }
 
-    @GetMapping
-    public ResponseEntity<List<QuoteDTO>> getAllQuotes() {
-        return ResponseEntity.ok(quoteService.getAllQuotes());
+    public List<QuoteDTO> getAllQuotes() {
+        return quoteRepository.findAll().stream()
+                .map(this::entityToDto)
+                .collect(Collectors.toList());
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<QuoteDTO> updateQuote(@PathVariable Long id, @Valid @RequestBody QuoteDTO quoteDTO) {
-        return ResponseEntity.ok(quoteService.updateQuote(id, quoteDTO));
+    public QuoteDTO updateQuote(Long id, QuoteDTO dto) {
+        if (!quoteRepository.existsById(id)) {
+            throw new QuoteNotFoundException("Quote not found with id: " + id);
+        }
+
+        Quote quote = dtoToEntity(dto);
+        quote.setId(id);
+        return entityToDto(quoteRepository.save(quote));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteQuote(@PathVariable Long id) {
-        quoteService.deleteQuote(id);
-        return ResponseEntity.ok("Quote deleted successfully.");
+    public void deleteQuote(Long id) {
+        if (!quoteRepository.existsById(id)) {
+            throw new QuoteNotFoundException("Quote not found with id: " + id);
+        }
+        quoteRepository.deleteById(id);
+    }
+
+    // Helper methods
+    private Quote dtoToEntity(QuoteDTO dto) {
+        Quote q = new Quote();
+        q.setId(dto.getId());
+        q.setCustomerName(dto.getCustomerName());
+        q.setBusinessName(dto.getBusinessName());
+        q.setBusinessAddress(dto.getBusinessAddress());
+        q.setBusinessType(dto.getBusinessType());
+        q.setAnnualRevenue(dto.getAnnualRevenue());
+        q.setNumberOfEmployees(dto.getNumberOfEmployees());
+        q.setLocationRisk(dto.getLocationRisk());
+        q.setClaimHistory(dto.getClaimHistory());
+        q.setDeductible(dto.getDeductible());
+        q.setCoverageAmount(dto.getCoverageAmount());
+        q.setPremium(dto.getPremium());
+        q.setStatus(dto.getStatus());
+        return q;
+    }
+
+    private QuoteDTO entityToDto(Quote q) {
+        return new QuoteDTO(
+                q.getId(),
+                q.getCustomerName(),
+                q.getBusinessName(),
+                q.getBusinessAddress(),
+                q.getBusinessType(),
+                q.getAnnualRevenue(),
+                q.getNumberOfEmployees(),
+                q.getLocationRisk(),
+                q.getClaimHistory(),
+                q.getDeductible(),
+                q.getCoverageAmount(),
+                q.getPremium(),
+                q.getStatus()
+        );
     }
 }
