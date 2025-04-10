@@ -1,56 +1,44 @@
-package com.gli.repository;
+package com.gli.controller;
 
-import com.gli.model.Quote;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import com.gli.dto.QuoteDTO;
+import com.gli.service.QuoteService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
+import java.util.List;
 
-@Repository
-public interface QuoteRepository extends JpaRepository<Quote, Long> {
-}
+@RestController
+@RequestMapping("/api/quotes")
+@CrossOrigin(origins = "*")
+public class QuoteController {
 
+    @Autowired
+    private QuoteService quoteService;
 
-package com.gli.dto;
+    @PostMapping
+    public ResponseEntity<QuoteDTO> createQuote(@Valid @RequestBody QuoteDTO quoteDTO) {
+        return ResponseEntity.ok(quoteService.createQuote(quoteDTO));
+    }
 
-import lombok.*;
-import jakarta.validation.constraints.*;
+    @GetMapping("/{id}")
+    public ResponseEntity<QuoteDTO> getQuote(@PathVariable Long id) {
+        return ResponseEntity.ok(quoteService.getQuoteById(id));
+    }
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class QuoteDTO {
+    @GetMapping
+    public ResponseEntity<List<QuoteDTO>> getAllQuotes() {
+        return ResponseEntity.ok(quoteService.getAllQuotes());
+    }
 
-    private Long id;
+    @PutMapping("/{id}")
+    public ResponseEntity<QuoteDTO> updateQuote(@PathVariable Long id, @Valid @RequestBody QuoteDTO quoteDTO) {
+        return ResponseEntity.ok(quoteService.updateQuote(id, quoteDTO));
+    }
 
-    @NotBlank(message = "Customer name is required")
-    private String customerName;
-
-    @NotBlank(message = "Business name is required")
-    private String businessName;
-
-    @NotBlank(message = "Business address is required")
-    private String businessAddress;
-
-    @NotBlank(message = "Business type is required")
-    private String businessType;
-
-    @Positive(message = "Annual revenue must be positive")
-    private double annualRevenue;
-
-    @Min(value = 1, message = "Number of employees must be at least 1")
-    private int numberOfEmployees;
-
-    private String locationRisk;
-
-    @Min(value = 0, message = "Claim history cannot be negative")
-    private int claimHistory;
-
-    @Positive(message = "Deductible must be positive")
-    private double deductible;
-
-    @Positive(message = "Coverage amount must be positive")
-    private double coverageAmount;
-
-    private double premium;
-
-    private String status;
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteQuote(@PathVariable Long id) {
+        quoteService.deleteQuote(id);
+        return ResponseEntity.ok("Quote deleted successfully.");
+    }
 }
