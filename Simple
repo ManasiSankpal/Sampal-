@@ -1,133 +1,72 @@
-package com.gli.dto;
+package com.gli.exception;
 
-import lombok.Data;
-import java.time.LocalDate;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 
-@Data
-public class PolicyDTO {
-    private String policyNumber;
-    private LocalDate effectiveDate;
-    private LocalDate expirationDate;
-    private String coverageDetails;
-    private double totalPremium;
-    private String status;
-    private Long quoteId;
-}
+import java.util.HashMap;
+import java.util.Map;
 
+@ControllerAdvice
+public class GlobalExceptionHandler {
 
+    // ----------- Custom Exception Classes -----------
 
-package com.gli.repository;
-
-import com.gli.model.Policy;
-import org.springframework.data.jpa.repository.JpaRepository;
-
-public interface PolicyRepository extends JpaRepository<Policy, Long> {
-}
-
-
-package com.gli.service;
-
-import com.gli.model.Policy;
-import com.gli.model.Quote;
-import com.gli.repository.PolicyRepository;
-import com.gli.repository.QuoteRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-@Service
-public class PolicyService {
-
-    @Autowired
-    private PolicyRepository policyRepository;
-
-    @Autowired
-    private QuoteRepository quoteRepository;
-
-    public Policy createPolicyFromQuote(Long quoteId) {
-        Quote quote = quoteRepository.findById(quoteId)
-                .orElseThrow(() -> new IllegalArgumentException("Quote not found"));
-
-        Policy policy = new Policy();
-        policy.setPolicyNumber("POL-" + UUID.randomUUID().toString().substring(0, 8));
-        policy.setEffectiveDate(LocalDate.now());
-        policy.setExpirationDate(LocalDate.now().plusYears(1));
-        policy.setCoverageDetails("Coverage: " + quote.getCoverageAmount());
-        policy.setTotalPremium(quote.getPremium());
-        policy.setStatus("Issued");
-        policy.setQuote(quote);
-
-        return policyRepository.save(policy);
+    public static class QuoteNotFoundException extends RuntimeException {
+        public QuoteNotFoundException(String message) {
+            super(message);
+        }
     }
 
-    public List<Policy> getAllPolicies() {
-        return policyRepository.findAll();
+    public static class PolicyNotFoundException extends RuntimeException {
+        public PolicyNotFoundException(String message) {
+            super(message);
+        }
     }
 
-    public Optional<Policy> getPolicyById(Long id) {
-        return policyRepository.findById(id);
+    public static class BrokerNotFoundException extends RuntimeException {
+        public BrokerNotFoundException(String message) {
+            super(message);
+        }
     }
 
-    public Policy updatePolicy(Long id, Policy updatedPolicy) {
-        Policy existing = policyRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Policy not found"));
-        existing.setCoverageDetails(updatedPolicy.getCoverageDetails());
-        existing.setEffectiveDate(updatedPolicy.getEffectiveDate());
-        existing.setExpirationDate(updatedPolicy.getExpirationDate());
-        existing.setTotalPremium(updatedPolicy.getTotalPremium());
-        existing.setStatus(updatedPolicy.getStatus());
-        return policyRepository.save(existing);
+    // ----------- Exception Handlers -----------
+
+    @ExceptionHandler(QuoteNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleQuoteNotFoundException(QuoteNotFoundException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getMessage());
+        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
 
-    public void deletePolicy(Long id) {
-        policyRepository.deleteById(id);
+    @ExceptionHandler(PolicyNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handlePolicyNotFoundException(PolicyNotFoundException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getMessage());
+        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(BrokerNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleBrokerNotFoundException(BrokerNotFoundException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getMessage());
+        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, String>> handleValidationErrors(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error ->
+            errors.put(error.getField(), error.getDefaultMessage()));
+        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", "An unexpected error occurred: " + ex.getMessage());
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
-
-package com.gli.controller;
-
-import com.gli.model.Policy;
-import com.gli.service.PolicyService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-
-@RestController
-@RequestMapping("/api/policies")
-public class PolicyController {
-
-    @Autowired
-    private PolicyService policyService;
-
-    @PostMapping("/generate/{quoteId}")
-    public Policy createFromQuote(@PathVariable Long quoteId) {
-        return policyService.createPolicyFromQuote(quoteId);
-    }
-
-    @GetMapping
-    public List<Policy> getAll() {
-        return policyService.getAllPolicies();
-    }
-
-    @GetMapping("/{id}")
-    public Policy getById(@PathVariable Long id) {
-        return policyService.getPolicyById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Policy not found"));
-    }
-
-    @PutMapping("/{id}")
-    public Policy update(@PathVariable Long id, @RequestBody Policy policy) {
-        return policyService.updatePolicy(id, policy);
-    }
-
-    @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
-        policyService.deletePolicy(id);
-    }
-}
-
