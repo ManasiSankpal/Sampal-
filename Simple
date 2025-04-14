@@ -1,86 +1,16 @@
-import { Component, AfterViewInit } from '@angular/core';
-
-@Component({
-  selector: 'app-form',
-  templateUrl: './form.component.html',
-  styleUrls: ['./form.component.css']
-})
-export class FormComponent implements AfterViewInit {
-  currentTab = 0;
-
-  ngAfterViewInit(): void {
-    this.showTab(this.currentTab);
-  }
-
-  showTab(n: number): void {
-    const tabs = document.getElementsByClassName("tab") as HTMLCollectionOf<HTMLElement>;
-    if (tabs[n]) {
-      tabs[n].style.display = "block";
-    }
-
-    const prevBtn = document.getElementById("prevBtn");
-    const nextBtn = document.getElementById("nextBtn");
-
-    if (prevBtn) {
-      prevBtn.style.display = n === 0 ? "none" : "inline";
-    }
-
-    if (nextBtn) {
-      nextBtn.innerHTML = n === (tabs.length - 1)
-        ? '<i class="fa fa-check"></i>'
-        : '<i class="fa fa-angle-double-right"></i>';
-    }
-
-    this.fixStepIndicator(n);
-  }
-
-  nextPrev(n: number): void {
-    const tabs = document.getElementsByClassName("tab") as HTMLCollectionOf<HTMLElement>;
-    if (n === 1 && !this.validateForm()) return;
-
-    if (tabs[this.currentTab]) {
-      tabs[this.currentTab].style.display = "none";
-    }
-    this.currentTab += n;
-
-    if (this.currentTab >= tabs.length) {
-      (document.getElementById("nextprevious") as HTMLElement).style.display = "none";
-      (document.getElementById("all-steps") as HTMLElement).style.display = "none";
-      (document.getElementById("register") as HTMLElement).style.display = "none";
-      (document.getElementById("text-message") as HTMLElement).style.display = "block";
-      return;
-    }
-
-    this.showTab(this.currentTab);
-  }
-
-  validateForm(): boolean {
-    let valid = true;
-    const tab = document.getElementsByClassName("tab")[this.currentTab];
-    const inputs = tab.getElementsByTagName("input");
-
-    for (let i = 0; i < inputs.length; i++) {
-      if (inputs[i].value === "") {
-        inputs[i].classList.add("invalid");
-        valid = false;
-      } else {
-        inputs[i].classList.remove("invalid");
-      }
-    }
-
-    if (valid) {
-      const steps = document.getElementsByClassName("step");
-      steps[this.currentTab].className += " finish";
-    }
-
-    return valid;
-  }
-
-  fixStepIndicator(n: number): void {
-    const steps = document.getElementsByClassName("step");
-    for (let i = 0; i < steps.length; i++) {
-      steps[i].className = steps[i].className.replace(" active", "");
-    }
-    steps[n].className += " active";
-  }
+<button id="nextBtn" (click)="nextPrev(1)">
+  <i class="fa fa-angle-double-right" aria-hidden="true"></i>
+  <span class="sr-only">Next Step</span>
+</button>
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
+
