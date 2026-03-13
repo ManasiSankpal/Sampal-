@@ -1,7 +1,20 @@
+const amountCell = "//div[@row-index='0']//div[@col-id='amount']";
+const amountInput = "//input[contains(@class,'ag-input-field-input')]";
+
 browser
-.waitForElementVisible("//div[@col-id='amount']",5000)
-.click("//div[@col-id='amount']")
-.waitForElementVisible("//input[contains(@class,'ag-input-field-input')]",5000)
-.clearValue("//input[contains(@class,'ag-input-field-input')]")
-.setValue("//input[contains(@class,'ag-input-field-input')]", text['Fac Amount'])
+.execute(function(xpath){
+  const el = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+  if(el){ el.scrollIntoView({block:'center', inline:'center'}); }
+}, [amountCell])
+
+.waitForElementVisible({selector: amountCell, locateStrategy:'xpath'},10000)
+
+.click({selector: amountCell, locateStrategy:'xpath'})
+
+.waitForElementVisible({selector: amountInput, locateStrategy:'xpath'},5000)
+
+.clearValue({selector: amountInput, locateStrategy:'xpath'})
+
+.setValue({selector: amountInput, locateStrategy:'xpath'}, text['Fac Amount'])
+
 .keys(browser.Keys.ENTER);
