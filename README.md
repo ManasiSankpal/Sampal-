@@ -1,7 +1,5 @@
 browser
-.waitForElementVisible("//div[@row-index='0']//div[@col-id='amount']",5000)
-.click("//div[@row-index='0']//div[@col-id='amount']")
-.keys(browser.Keys.ENTER)
-.pause(500)
-.keys(text['Fac Amount'])
-.keys(browser.Keys.ENTER);
+.waitForElementVisible("//input[contains(@class,'ag-input-field-input')]",5000)
+.click("//input[contains(@class,'ag-input-field-input')]")
+.clearValue("//input[contains(@class,'ag-input-field-input')]")
+.setValue("//input[contains(@class,'ag-input-field-input')]", text['Fac Amount'])
