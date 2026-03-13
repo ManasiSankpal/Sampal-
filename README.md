@@ -1,17 +1,27 @@
-const amountCell = "//div[@row-index='0']//div[@col-id='amount']";
-const amountInput = "//input[contains(@class,'ag-input-field-input')]";
+FacultativeAmount: {
+  selector: "//div[@row-index='0']//div[@col-id='amount']",
+  locateStrategy: "xpath"
+}
+
+AmountInput: {
+  selector: "//div[contains(@class,'ag-cell-inline-editing')]//input",
+  locateStrategy: "xpath"
+}
+
 
 browser
-.waitForElementVisible({selector: amountCell, locateStrategy: "xpath"}, 10000)
+.waitForElementVisible(this.elements.FacultativeAmount, 5000)
 
-.moveToElement({selector: amountCell, locateStrategy: "xpath"}, 5, 5)
+.click(this.elements.FacultativeAmount)
 
-.doubleClick({selector: amountCell, locateStrategy: "xpath"})   // start edit mode
+.keys(browser.Keys.ENTER)   // start edit mode
 
-.waitForElementVisible({selector: amountInput, locateStrategy: "xpath"}, 5000)
+.waitForElementVisible(this.elements.AmountInput, 5000)
 
-.clearValue({selector: amountInput, locateStrategy: "xpath"})
+.clearValue(this.elements.AmountInput)
 
-.setValue({selector: amountInput, locateStrategy: "xpath"}, text['Fac Amount'])
+.setValue(this.elements.AmountInput, text['Fac Amount'])
 
-.keys(browser.Keys.ENTER);
+.keys(browser.Keys.ENTER)
+
+.pause(2000);
